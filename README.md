@@ -23,8 +23,8 @@ For educational clarity, the script is linearly organized into 6 distinct sectio
 6. Visualization & Postprocessing: Visualizes the sampler's journey and extracts the final mathematical evidence.
 
 # Dependencies
-numpy
-scipy
-matplotlib
-tqdm
+numpy,
+scipy,
+matplotlib,
+tqdm,
 anesthetic
