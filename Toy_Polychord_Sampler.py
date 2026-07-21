@@ -4,42 +4,35 @@ import numpy as np
 from tqdm import trange
 from anesthetic import NestedSamples
 
-# Here we are difining the seed of the random number function.
-np.random.seed(0)
+np.random.seed(0) # Here we are difining the seed of the random number function.
 
 # Section 1 - Nested Sampling Settings.
 "Our problems have parameters. Here we call them dimentions. These are very imporant for "
 "what we are doing."
 
-dimensions = 2  # Number of dimensions in the problem.
-# This is not a "Rule of thumb" but is a good idea for picking the live points. The more dimensions you have the more live points you need.
-live_points = 25 * dimensions
-# Same logic as above. The more dimensions you have the more iterations you need.
-iterations = dimensions * live_points
+dimensions = 2 # Number of dimensions in the problem.
+live_points = 25 * dimensions # This is not a "Rule of thumb" but is a good idea for picking the live points. The more dimensions you have the more live points you need.
+iterations = dimensions * live_points # Same logic as above. The more dimensions you have the more iterations you need.
 
 "Our sampler works by taking the number with the least likelihood, then picking a new points that has"
 "a likelihood greater than the least likelihood. Using this point, the algorithm will take a random walk"
 "mcmc_steps, which is to find a new points that has likelihood greater than the previous one."
 
-# This is the number of steps the algorithm will take to find a new point.
-mcmc_steps = 3 * dimensions
+mcmc_steps = 3 * dimensions # This is the number of steps the algorithm will take to find a new point.
 
 
 # Sections 2 - Likelihood and prior.
 "This is our example. We know where the answer is, but we will pretend we don't."
 
-mean = np.ones(dimensions) * 0.5  # This is the center of our distribution.
+mean = np.ones(dimensions) * 0.5 # This is the center of our distribution. 
 
 "To define a multivariate normal distribution(Gaussian distribution), the covariance matrix must STRICTLY"
 "be symmetric, and positive semi definite. This is a requirement for the distribution to be valid."
 
-# This is the covariance matrix of our distribution
-covariance_matrix = np.random.rand(dimensions, dimensions)
-# This is the corrected covariance matri
-corrected_covarriance_matrix = 0.01 * covariance_matrix @ covariance_matrix.T
+covariance_matrix = np.random.rand(dimensions, dimensions) # This is the covariance matrix of our distribution
+corrected_covariance_matrix =  0.01 * covariance_matrix @ covariance_matrix.T # This is the corrected covariance matri
 
-# This is the distribution we will be sampling from.
-distribution = multivariate_normal(mean=mean, cov=corrected_covarriance_matrix)
+distribution = multivariate_normal(mean = mean, cov = corrected_covariance_matrix) # This is the distribution we will be sampling from.
 
 "The above works like this:"
 "def manual_multivariate_normal(x, mean, cov):"
@@ -56,11 +49,8 @@ distribution = multivariate_normal(mean=mean, cov=corrected_covarriance_matrix)
 "in high dimensions get extremely close to zero. Computers struggle to calculate numbers like"
 "0.00000000001, but taking the log turns these tiny probabilities into manageable negative numbers."
 
-
 def log_likelihood(x):
-    # This is the log likelihood of the point x. The higher the log likelihood, the better the point is.
-    return distribution.logpdf(x)
-
+    return distribution.logpdf(x) # This is the log likelihood of the point x. The higher the log likelihood, the better the point is.
 
 "This algorithm might try to wander into areas of the parameter space that are not valid. To prevent this, we need to define a prior."
 "1. (x > 0) & (x < 1) checks if the point is within the bounds of the prior. If it is, we return 0, which means the point is valid."
@@ -70,18 +60,16 @@ def log_likelihood(x):
 "- If the condition is broken (outside the box), make the score Negative Infinity (-np.inf)."
 "Negative Infinity in log-space means 0% probability. This physically forces the algorithm to stay inside the box."
 
-
 def log_posterior_unnormalized(x):
-    # Uniform prior between 0 and 1 for each dimension.
-    # Here we get the distribution inside the box.
-    return log_likelihood(x) + np.where(((x > 0) & (x < 1)).all(axis=-1), 0, -np.inf)
+    # Uniform prior between 0 and 1 for each dimension.     
+    return log_likelihood(x) + np.where(((x > 0) & (x < 1)).all(axis=-1), 0, -np.inf) # Here we get the distribution inside the box.
 
 
 # Section 3 - Initial live points.
 "Here we are setting up the starting board for our Nested Sampling algorithm."
 "First, we scatter our initial 'live points' entirely at random withing our search space."
 
-x = np.random.rand(live_points, dimensions)  # This is the initial live points.
+x = np.random.rand(live_points, dimensions) # This is the initial live points. 
 
 scores_list = []
 
@@ -89,15 +77,13 @@ scores_list = []
 "We loop through every single point and pass it through our log_posterior_unnormalized function"
 "This calculates its score based on both the likelihood and the prior."
 
-for current_point in x:  # Loop to find the posterior of all the live points.
+for current_point in x: # Loop to find the posterior of all the live points.
     current_score = log_posterior_unnormalized(current_point)
-    # This is the initial scores of the live points.
-    scores_list.append(current_score)
+    scores_list.append(current_score) # This is the initial scores of the live points.
 
 "Finally we collect all these calculated scores in a array."
 
-# This is the initial scores of the live points in an array format.
-array_of_scores = np.array(scores_list)
+array_of_scores = np.array(scores_list) # This is the initial scores of the live points in an array format.
 
 "Points must remember the score they had to beat to be 'born'. These first points"
 "beat nothing, so their starting boundary is simply Negative Infinity (-np.inf)."
@@ -126,8 +112,8 @@ dead_birth_scores = np.empty(0)
 "If it missed, it shrinks the line towards the center and tries again."
 "This guarantees we always find a better point efficiently."
 
-
 def slice_sampling(starting_point, step_direction, target_score):
+    
     "Create an initial search bracket around our starting point. Instead of placing the"
     "point perfectly in the center, we randomly shift the bracket. This asymmetry prevents"
     "the algorithm from getting stuck in repetitive, symmetric search patterns."
@@ -151,24 +137,23 @@ def slice_sampling(starting_point, step_direction, target_score):
     "If it fails, shrink the boundary towards the starting point and try again."
     while True:
         shrink_factor = np.random.rand()
-        proposed_point = negative_bound + shrink_factor * \
-            (positive_bound - negative_bound)
+        proposed_point = negative_bound + shrink_factor * (positive_bound - negative_bound)
 
         proposed_score = log_posterior_unnormalized(proposed_point)
 
         if proposed_score > target_score:
             return proposed_point, proposed_score
-
+        
         # If the proposal fails, check which side of the start it laned on, and shrink that side
         if (proposed_point - starting_point) @ step_direction > 0:
             positive_bound = proposed_point
-        else:
+        else: 
             negative_bound = proposed_point
 
-
 # Section 5 - Main nested sampling loop
-for _ in range(iterations):
 
+for _ in trange(iterations):
+    
     "5.a) Kill the worst point."
     worst_score = array_of_scores.min()
 
@@ -179,14 +164,13 @@ for _ in range(iterations):
     "and moving forward with only the remaining winners."
 
     # Create a filter (True/False) to seperate the survivors from the dead.
-    survivors_mask = array_of_scores > worst_score  # True or False operation
-    dead_mask = ~survivors_mask  # The exact opposite of the survivors mas
+    survivors_mask = array_of_scores > worst_score # True or False operation
+    dead_mask = ~survivors_mask # The exact opposite of the survivors mas
 
     # Take the points that failed (dead mask) and add them to our graveyard arrays.
     dead_points = np.concatenate((dead_points, x[dead_mask]))
     dead_scores = np.concatenate((dead_scores, array_of_scores[dead_mask]))
-    dead_birth_scores = np.concatenate(
-        (dead_birth_scores, birth_scores[dead_mask]))
+    dead_birth_scores = np.concatenate((dead_birth_scores, birth_scores[dead_mask]))
 
     # Keep ONLY the survivors to continue the process
     x = x[survivors_mask]
@@ -194,34 +178,31 @@ for _ in range(iterations):
     birth_scores = birth_scores[survivors_mask]
 
     "5.b) Build an adaptive proposal from current live + phantom points"
-
+    
     # Prepare the mathematical compass for our random walk using the covariance matrix
-    step_generator = multivariate_normal(
-        np.zeros(dimensions), proposal_covariance)
+    step_generator = multivariate_normal(np.zeros(dimensions), proposal_covariance)
     inverse_covariance = np.linalg.inv(proposal_covariance)
 
     # Keep a termporary copy of our surviving points. We will this to 'learn' the shape.
     # of the likelihood later and update our compass.
     phantom_points = x.copy()
-
+    
     # Pick one random surviving point to act asthe starting point for our new search
     starting_point = x[np.random.choice(len(x))]
 
     "5.c) Chain of slice - sampling steps to decorrelate from starting_point"
     # Take a series of steps to find a new point. We take multiple steps so the final
     # point becomes completely independent from where it started.
-
+    
     for _ in range(mcmc_steps):
 
         # Generate a radnom direction, then adjust its scale using our compass
         raw_direction = step_generator.rvs()
-        step_direction = raw_direction / \
-            (raw_direction @ inverse_covariance @ raw_direction) ** 0.5
+        step_direction = raw_direction / (raw_direction @ inverse_covariance @ raw_direction) ** 0.5
 
         # Use the slice_sample function to find a new point alonf this direction
         # that has a score STRICTLY HIGHER than the worst_score
-        new_point, new_score = slice_sampling(
-            starting_point, step_direction, worst_score)
+        new_point, new_score = slice_sampling(starting_point, step_direction, worst_score)
 
         # Add this intermediate point to our phantom list to help map the terrain.
         phantom_points = np.concatenate((phantom_points, [new_point]))
@@ -233,7 +214,7 @@ for _ in range(iterations):
     "Update our compass (covariance matrix) based on the shape of all the phantom points"
     "we just explored. The algorithm gets smarter about the peaks shape over time."
     proposal_covariance = np.cov(phantom_points.T)
-
+    
     "Add our completely new, successfully found point into the official live points list,"
     "along with its score and the boundary it had to beat (worst_score)."
     x = np.concatenate((x, [new_point]))
@@ -241,20 +222,19 @@ for _ in range(iterations):
     birth_scores = np.concatenate((birth_scores, [worst_score]))
 
 
-# Section 6 — Visualization and Postprocessing
+
+# SECTION 6 — Visualization and Postprocessing
 "Before using anesthetic, it is incredibly helpful to visualize WHAT the algorithm"
 "actually did in our 2D space, and HOW it climbed the probability mountain."
 
-# Plot 1: The Shrinking Process (2D Scatter)
+# --- Plot 1: The Shrinking Process (2D Scatter) ---
 "Since our problem is strictly 2D, we can plot the exact coordinates of every point."
 "Dead points (blue) show the footprint of the algorithm as it explored and shrank."
 "Final live points (red) show the exact peak it finally squeezed into."
 
 plt.figure(figsize=(8, 8))
-plt.scatter(dead_points[:, 0], dead_points[:, 1], color='royalblue',
-            alpha=0.3, s=10, label='Dead Points (Exploration Path)')
-plt.scatter(x[:, 0], x[:, 1], color='red', alpha=0.8, s=40,
-            label='Final Surviving Points (The Peak)')
+plt.scatter(dead_points[:, 0], dead_points[:, 1], color='royalblue', alpha=0.3, s=10, label='Dead Points (Exploration Path)')
+plt.scatter(x[:, 0], x[:, 1], color='red', alpha=0.8, s=40, label='Final Surviving Points (The Peak)')
 
 plt.xlim(0, 1)
 plt.ylim(0, 1)
@@ -265,7 +245,7 @@ plt.legend()
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.show()
 
-# Plot 2: Climbing the Hill (Trace Plot)
+# --- Plot 2: Climbing the Hill (Trace Plot) ---
 "This plot proves the core rule of Nested Sampling: The worst score MUST strictly increase."
 "You will see the line start low and curve upwards as the box gets tighter around the peak."
 
@@ -277,7 +257,7 @@ plt.ylabel("Dead Point Score")
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.show()
 
-# Plot 3 & 4: Postprocessing with Anesthetic (Professor's Code)
+# --- Plot 3 & 4: Postprocessing with Anesthetic (Professor's Code) ---
 "To get the final mathematical answer (the Evidence), we must merge the points that died"
 "along the way with the final survivors that hold the remaining probability volume."
 
@@ -285,23 +265,27 @@ final_all_points = np.concatenate((dead_points, x))
 final_all_scores = np.concatenate((dead_scores, array_of_scores))
 final_all_births = np.concatenate((dead_birth_scores, birth_scores))
 
+# Δημιουργία του αντικειμένου NestedSamples με όλα τα δεδομένα μας
 samples = NestedSamples(
     final_all_points,
     logL=final_all_scores,
     logL_birth=final_all_births
-)
+)               
 
-# Plot 5: The Bell Curves (1D Posteriors)
+# --- Plot 5: The Bell Curves (1D Posteriors) ---
 "This visualizes the final probability curves for each dimension."
 "A red dashed line exactly at 0.5 acts as our crosshair to verify the peak."
 
+# Ζητάμε από το anesthetic να φτιάξει τα γραφήματα και για τις δύο διαστάσεις (0 και 1)
 axes = samples.plot_1d([0, 1], figsize=(12, 5))
-axes[0].axvline(0.5, color='red', linestyle='--',
-                linewidth=2, label='True Center (0.5)')
+
+# Προσθέτουμε την κόκκινη γραμμή και τον τίτλο στο πρώτο γράφημα (Διάσταση 0)
+axes[0].axvline(0.5, color='red', linestyle='--', linewidth=2, label='True Center (0.5)')
 axes[0].set_title("Dimension 1 (X Axis)")
 axes[0].legend()
-axes[1].axvline(0.5, color='red', linestyle='--',
-                linewidth=2, label='True Center (0.5)')
+
+# Προσθέτουμε την κόκκινη γραμμή και τον τίτλο στο δεύτερο γράφημα (Διάσταση 1)
+axes[1].axvline(0.5, color='red', linestyle='--', linewidth=2, label='True Center (0.5)')
 axes[1].set_title("Dimension 2 (Y Axis)")
 axes[1].legend()
 
