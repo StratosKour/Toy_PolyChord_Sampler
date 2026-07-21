@@ -223,11 +223,11 @@ for _ in trange(iterations):
 
 
 
-# SECTION 6 — Visualization and Postprocessing
+# Section 6 — Visualization and Postprocessing
 "Before using anesthetic, it is incredibly helpful to visualize WHAT the algorithm"
 "actually did in our 2D space, and HOW it climbed the probability mountain."
 
-# --- Plot 1: The Shrinking Process (2D Scatter) ---
+# Plot 1
 "Since our problem is strictly 2D, we can plot the exact coordinates of every point."
 "Dead points (blue) show the footprint of the algorithm as it explored and shrank."
 "Final live points (red) show the exact peak it finally squeezed into."
@@ -245,7 +245,7 @@ plt.legend()
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.show()
 
-# --- Plot 2: Climbing the Hill (Trace Plot) ---
+# Plot 2
 "This plot proves the core rule of Nested Sampling: The worst score MUST strictly increase."
 "You will see the line start low and curve upwards as the box gets tighter around the peak."
 
@@ -257,7 +257,7 @@ plt.ylabel("Dead Point Score")
 plt.grid(True, linestyle='--', alpha=0.5)
 plt.show()
 
-# --- Plot 3 & 4: Postprocessing with Anesthetic (Professor's Code) ---
+# Plot 3 & 4
 "To get the final mathematical answer (the Evidence), we must merge the points that died"
 "along the way with the final survivors that hold the remaining probability volume."
 
@@ -272,19 +272,15 @@ samples = NestedSamples(
     logL_birth=final_all_births
 )               
 
-# --- Plot 5: The Bell Curves (1D Posteriors) ---
+# Plot 5
 "This visualizes the final probability curves for each dimension."
 "A red dashed line exactly at 0.5 acts as our crosshair to verify the peak."
 
-# Ζητάμε από το anesthetic να φτιάξει τα γραφήματα και για τις δύο διαστάσεις (0 και 1)
-axes = samples.plot_1d([0, 1], figsize=(12, 5))
 
-# Προσθέτουμε την κόκκινη γραμμή και τον τίτλο στο πρώτο γράφημα (Διάσταση 0)
+axes = samples.plot_1d([0, 1], figsize=(12, 5))
 axes[0].axvline(0.5, color='red', linestyle='--', linewidth=2, label='True Center (0.5)')
 axes[0].set_title("Dimension 1 (X Axis)")
 axes[0].legend()
-
-# Προσθέτουμε την κόκκινη γραμμή και τον τίτλο στο δεύτερο γράφημα (Διάσταση 1)
 axes[1].axvline(0.5, color='red', linestyle='--', linewidth=2, label='True Center (0.5)')
 axes[1].set_title("Dimension 2 (Y Axis)")
 axes[1].legend()
@@ -302,7 +298,3 @@ plt.xlabel("logZ")
 plt.ylabel("Frequency")
 plt.legend()
 plt.show()
-
-"2. Interactive GUI"
-"This opens the interactive window to explore the 1D and 2D posteriors."
-samples.gui()
